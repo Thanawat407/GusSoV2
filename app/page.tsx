@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import emailjs from '@emailjs/browser';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = 'https://yqgqbmcmklshurruikln.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3FibWNta2xzaHVycnVpa2xuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2NjI2MywiZXhwIjoyMTA2MTQyMjYzfQ.ZzisfPr_oUtRlaQvf2mdzDDw_6SG648udLznPrEVJYI'; // (หรือใส่ตัว anon key จริงของคุณตรงนี้)
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function GusSoStorefront() {
