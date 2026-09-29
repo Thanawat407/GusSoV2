@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import emailjs from '@emailjs/browser';
 
 const supabaseUrl = 'https://yqgqbmcmklshurruikln.supabase.co';
-const supabaseKey = 'sb_publishable_tmmvIicxYSDbKjEAabdn8w_IkWl8siK';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3FibWNta2xzaHVycnVpa2xuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NjYyNjMsImV4cCI6MjEwNjE0MjI2M30.ZRZjjNCTXoT54482IsYfBqdMoYZjwR_WYBo-alQZziQ';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function GusSoStorefront() {

@@ -2,12 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = 'https://yqgqbmcmklshurruikln.supabase.co';
-// ใช้ Legacy anon key ตัวยาวเดิมของคุณ
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3FibWNta2xzaHVycnVpa2xuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NjYyNjMsImV4cCI6MjEwNjE0MjI2M30.ZRZjjNCTXoT54482IsYfBqdMoYZjwR_WYBo-alQZziQ';
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 export function SignUpForm() {
   const [fullName, setFullName] = useState('');
@@ -20,26 +14,41 @@ export function SignUpForm() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.from('users').insert([{
-        email: email.trim(),
-        full_name: fullName.trim(),
-        role_id: 1,
-        user_pwd: password
-      }]);
+      const supabaseUrl = 'https://yqgqbmcmklshurruikln.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3FibWNta2xzaHVycnVpa2xuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2NjI2MywiZXhwIjoyMTA2MTQyMjYzfQ.ZzisfPr_oUtRlaQvf2mdzDDw_6SG648udLznPrEVJYI';
 
-      if (error) {
-        alert('สมัครสมาชิกไม่สำเร็จ: ' + error.message);
-      } else {
-        alert('สมัครสมาชิกสำเร็จ!');
-        localStorage.setItem('gusso_current_session', JSON.stringify({
+      // ใช้ Fetch API ตรงไปที่ REST endpoint ของ Supabase เพื่อเลี่ยงปัญหาไคลเอนต์พัง
+      const response = await fetch(`${supabaseUrl}/rest/v1/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
           email: email.trim(),
           full_name: fullName.trim(),
-          role_id: 1
-        }));
-        window.location.href = '/';
+          role_id: 1,
+          user_pwd: password
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Server responded with error');
       }
+
+      alert('สมัครสมาชิกสำเร็จ!');
+      localStorage.setItem('gusso_current_session', JSON.stringify({
+        email: email.trim(),
+        full_name: fullName.trim(),
+        role_id: 1
+      }));
+      window.location.href = '/';
+
     } catch (err: any) {
-      alert('เกิดข้อผิดพลาด: ' + (err.message || 'Failed to fetch'));
+      alert('สมัครสมาชิกไม่สำเร็จ: ' + (err.message || 'Failed to fetch'));
     } finally {
       setLoading(false);
     }
