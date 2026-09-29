@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,6 +13,14 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
     persistSession: false,
   },
 });
+
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 export async function POST(request: Request) {
   try {
@@ -34,7 +41,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // ตรวจสอบว่าอีเมลมีอยู่ในระบบหรือไม่
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('user_id, email')
@@ -48,11 +54,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Hash รหัสผ่านใหม่
-    const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(newPassword, saltRounds);
+    const passwordHash = await hashPassword(newPassword);
 
-    // อัปเดตรหัสผ่าน
     const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({ password_hash: passwordHash })
