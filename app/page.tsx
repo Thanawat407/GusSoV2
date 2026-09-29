@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import emailjs from '@emailjs/browser';
 
 const supabaseUrl = 'https://yqgqbmcmklshurruikln.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3FibWNta2xzaHVycnVpa2xuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2NjI2MywiZXhwIjoyMTA2MTQyMjYzfQ.ZzisfPr_oUtRlaQvf2mdzDDw_6SG648udLznPrEVJYI'; // (หรือใส่ตัว anon key จริงของคุณตรงนี้)
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3FibWNta2xzaHVycnVpa2xuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2NjI2MywiZXhwIjoyMTA2MTQyMjYzfQ.ZzisfPr_oUtRlaQvf2mdzDDw_6SG648udLznPrEVJYI';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function GusSoStorefront() {
@@ -31,7 +31,7 @@ export default function GusSoStorefront() {
 
   useEffect(() => {
     try {
-      const sessionData = localStorage.getItem('gusso_current_session');
+      const sessionData = localStorage.getItem('gusso_current_session');  
       if (sessionData) {
         setCurrentUser(JSON.parse(sessionData));
       }
@@ -170,15 +170,38 @@ export default function GusSoStorefront() {
         }
       }
 
+      // 1. บันทึกข้อมูลลงตาราง orders (หลัก)
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert([{ user_id: userId, total_amount: total, status: 'ยืนยันแล้ว' }])
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('Order error:', orderError);
+        alert('เกิดข้อผิดพลาดในการบันทึก orders: ' + orderError.message);
+        setIsCheckingOut(false);
+        return;
+      }
+
       const orderId = orderData.order_id;
       const receiptNo = 'RCP-2026-' + String(orderId).padStart(4, '0');
+
+      // 2. บันทึกข้อมูลลงตาราง payments (แบบปลอดภัย ดัก Error แยกต่างหาก)
+      try {
+        await supabase
+          .from('payments')
+          .insert([{
+            order_id: orderId,
+            amount: total,
+            status: 'ชำระเงินแล้ว',
+            payment_date: new Date().toISOString(),
+            payment_method: 'PromptPay QR',
+            slip_image_url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=500&q=80'
+          }]);
+      } catch (payErr) {
+        console.error('Payment table warning (non-fatal):', payErr);
+      }
 
       let orderItemsHtmlList = [];
 
@@ -229,7 +252,7 @@ export default function GusSoStorefront() {
       );
 
       setPaymentStatus('ชำระเงินแล้ว');
-      alert(`ชำระเงินสำเร็จ! สถานะอัปเดตเป็น "ชำระเงินแล้ว" และส่งใบเสร็จพร้อมลิงก์ดาวน์โหลดไปที่อีเมล ${userEmail} เรียบร้อยแล้ว`);
+      alert(`ชำระเงินสำเร็จ! ส่งใบเสร็จพร้อมลิงก์ดาวน์โหลดไปที่อีเมล ${userEmail} เรียบร้อยแล้ว`);
       setCart([]);
       setIsQRModalOpen(false);
     } catch (err) {
@@ -240,7 +263,6 @@ export default function GusSoStorefront() {
     }
   };
 
-  // ตรวจสอบว่าเป็นแอดมินหรือไม่จากอีเมลหรือ role_id
   const isAdmin = currentUser && (currentUser.email === 'admin@gusso.com' || currentUser.role_id === 2);
 
   return (
@@ -255,7 +277,6 @@ export default function GusSoStorefront() {
         </div>
         
         <div className="flex items-center space-x-3">
-          {/* ปุ่มหลังบ้าน เห็นเฉพาะ Admin เท่านั้น */}
           {isAdmin && (
             <button 
               onClick={() => setIsAdminModalOpen(true)}
@@ -536,5 +557,3 @@ export default function GusSoStorefront() {
     </div>
   );
 }
-
-{/* update */}
