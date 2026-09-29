@@ -187,10 +187,10 @@ export default function GusSoStorefront() {
           .insert([{
             order_id: orderId,
             amount: total,
-            status: 'ชำระเงินแล้ว',
-            payment_date: new Date().toISOString(),
+            payment_status: 'ชำระเงินแล้ว',
+            paid_at: new Date().toISOString(),
             payment_method: 'PromptPay QR',
-            slip_image_url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=500&q=80'
+            slip_image: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=500&q=80'
           }]);
       } catch (payErr) {
         console.error('Payment table warning (non-fatal):', payErr);

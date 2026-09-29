@@ -19,7 +19,6 @@ export function SignUpForm() {
     setLoading(true);
 
     try {
-      // บันทึกข้อมูลลงตาราง users ตามโครงสร้างใหม่ (ไม่ต้องส่ง user_id เพราะเป็น SERIAL, ใช้ password_hash)
       const { error } = await supabase.from('users').insert([{
         email: email.trim(),
         full_name: fullName.trim(),
