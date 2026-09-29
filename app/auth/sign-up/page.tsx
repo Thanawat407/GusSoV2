@@ -19,7 +19,7 @@ export function SignUpForm() {
     setLoading(true);
 
     try {
-      // บันทึกข้อมูลลงตาราง users โดยตรง
+      // บันทึกข้อมูลลงตาราง users ใน Supabase โดยตรงทันที
       const { error } = await supabase.from('users').insert([{
         email: email,
         full_name: fullName,
