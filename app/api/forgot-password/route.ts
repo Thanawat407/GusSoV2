@@ -78,11 +78,13 @@ export async function POST(request: Request) {
         }),
       });
 
+      const responseText = await emailjsResponse.text();
+      console.log('EmailJS response:', responseText);
+
       if (!emailjsResponse.ok) {
-        const errorText = await emailjsResponse.text();
-        console.error('EmailJS API error:', errorText);
+        console.error('EmailJS API error:', responseText);
         return NextResponse.json(
-          { error: 'ไม่สามารถส่งอีเมลได้ กรุณาลองใหม่ในภายหลัง' },
+          { error: 'ไม่สามารถส่งอีเมลได้: ' + responseText },
           { status: 500 }
         );
       }
@@ -94,7 +96,7 @@ export async function POST(request: Request) {
     } catch (emailError) {
       console.error('EmailJS error:', emailError);
       return NextResponse.json(
-        { error: 'เกิดข้อผิดพลาดในการส่งอีเมล กรุณาลองใหม่ในภายหลัง' },
+        { error: 'เกิดข้อผิดพลาดในการส่งอีเมล: ' + (emailError instanceof Error ? emailError.message : 'Unknown error') },
         { status: 500 }
       );
     }
