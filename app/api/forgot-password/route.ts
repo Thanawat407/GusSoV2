@@ -70,10 +70,10 @@ export async function POST(request: Request) {
           template_id: 'template_1ln8ve7',
           user_id: 'DSI4WZImOBIzggUBL',
           template_params: {
-            to_email: email,
-            to_name: user.full_name || email,
-            reset_link: resetLink,
-            reset_token: resetToken,
+            email: email,
+            name: user.full_name || email,
+            link: resetLink,
+            token: resetToken,
           },
         }),
       });
