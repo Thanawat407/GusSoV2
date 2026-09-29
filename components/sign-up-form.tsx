@@ -2,6 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = 'https://yqgqbmcmklshurruikln.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3FibWNta2xzaHVycnVpa2xuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2NjI2MywiZXhwIjoyMTA2MTQyMjYzfQ.ZzisfPr_oUtRlaQvf2mdzDDw_6SG648udLznPrEVJYI';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export function SignUpForm() {
   const [fullName, setFullName] = useState('');
@@ -21,44 +26,30 @@ export function SignUpForm() {
     setLoading(true);
 
     try {
-      const supabaseUrl = "https://yqgqbmcmklshurruikln.supabase.co";
-      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3FibWNta2xzaHVycnVpa2xuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2NjI2MywiZXhwIjoyMTA2MTQyMjYzfQ.ZzisfPr_oUtRlaQvf2mdzDDw_6SG648udLznPrEVJYI";
-
       const newUserId = generateUUID();
 
-      const response = await fetch(`${supabaseUrl}/rest/v1/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Prefer': 'return=representation'
-        },
-        body: JSON.stringify({
-          user_id: newUserId,
-          email: email.trim(),
-          full_name: fullName.trim(),
-          role_id: 1,
-          user_pwd: password
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Server responded with error');
-      }
-
-      alert('สมัครสมาชิกสำเร็จ!');
-      localStorage.setItem('gusso_current_session', JSON.stringify({
+      const { error } = await supabase.from('users').insert([{
         user_id: newUserId,
         email: email.trim(),
         full_name: fullName.trim(),
-        role_id: 1
-      }));
-      window.location.href = '/';
+        role_id: 1,
+        user_pwd: password
+      }]);
 
+      if (error) {
+        alert('สมัครสมาชิกไม่สำเร็จ: ' + error.message);
+      } else {
+        alert('สมัครสมาชิกสำเร็จ!');
+        localStorage.setItem('gusso_current_session', JSON.stringify({
+          user_id: newUserId,
+          email: email.trim(),
+          full_name: fullName.trim(),
+          role_id: 1
+        }));
+        window.location.href = '/';
+      }
     } catch (err: any) {
-      alert('สมัครสมาชิกไม่สำเร็จ: ' + (err.message || 'Failed to fetch'));
+      alert('เกิดข้อผิดพลาด: ' + (err.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -115,10 +106,7 @@ export function SignUpForm() {
         </div>
 
         <button 
-          type="submit" 
-          disabled={loading}
-          className="w-full py-3 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white font-bold rounded-xl text-sm shadow-md transition"
-        >
+          >
           {loading ? 'กำลังตรวจสอบ...' : 'ยืนยันการสมัครสมาชิก'}
         </button>
       </form>
