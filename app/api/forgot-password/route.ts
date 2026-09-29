@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import emailjs from '@emailjs/nodejs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,10 +27,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // ตรวจสอบว่าอีเมลมีอยู่ในระบบหรือไม่
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
-      .select('user_id, email')
+      .select('user_id, email, full_name')
       .eq('email', email.toLowerCase().trim())
       .single();
 
@@ -40,20 +40,31 @@ export async function POST(request: Request) {
       );
     }
 
-    // ส่งอีเมลรีเซ็ตรหัสผ่าน (จำลอง - ในระบบจริงควรส่งอีเมลจริง)
-    // สร้าง token สำหรับรีเซ็ตรหัสผ่าน
     const resetToken = 'reset_' + Math.random().toString(36).substring(2, 15);
+    const resetLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://gussov2.onrender.com'}/auth/update-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
-    // บันทึก token ลงฐานข้อมูล (ในระบบจริงควรมีตาราง password_resets)
-    // ตอนนี้จำลองการส่งอีเมล
-
-    console.log(`Password reset token for ${email}: ${resetToken}`);
+    try {
+      await emailjs.send(
+        'service_5t8qqtj',
+        'template_1ln8ve7',
+        {
+          to_email: email,
+          to_name: user.full_name || email,
+          reset_link: resetLink,
+          reset_token: resetToken,
+        },
+        {
+          publicKey: 'DSI4WZImOBIzggUBL',
+          privateKey: process.env.EMAILJS_PRIVATE_KEY || '',
+        }
+      );
+    } catch (emailError) {
+      console.error('EmailJS error:', emailError);
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลของคุณแล้ว',
-      // ในระบบจริงไม่ควรส่ง token กลับไป client
-      // resetToken: resetToken,
+      message: 'ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว',
     });
   } catch (error: any) {
     console.error('Forgot password error:', error);
