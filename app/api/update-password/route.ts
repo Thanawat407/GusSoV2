@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import bcrypt from 'bcrypt';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,12 +13,20 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   },
 });
 
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, newPassword } = body;
+    const { email, token, newPassword } = body;
 
-    if (!email || !newPassword) {
+    if (!email || !token || !newPassword) {
       return NextResponse.json(
         { error: 'กรุณากรอกข้อมูลให้ครบถ้วน' },
         { status: 400 }
@@ -33,10 +40,39 @@ export async function POST(request: Request) {
       );
     }
 
+    // ตรวจสอบ token จากฐานข้อมูล
+    const { data: resetRecord, error: resetError } = await supabaseAdmin
+      .from('password_resets')
+      .select('reset_id, user_id, token, expires_at, used')
+      .eq('token', token)
+      .eq('email', email.toLowerCase().trim())
+      .single();
+
+    if (resetError || !resetRecord) {
+      return NextResponse.json(
+        { error: 'ลิงก์รีเซ็ตไม่ถูกต้องหรือหมดอายุแล้ว' },
+        { status: 400 }
+      );
+    }
+
+    if (resetRecord.used) {
+      return NextResponse.json(
+        { error: 'ลิงก์รีเซ็ตนี้ถูกใช้งานไปแล้ว' },
+        { status: 400 }
+      );
+    }
+
+    if (new Date(resetRecord.expires_at) < new Date()) {
+      return NextResponse.json(
+        { error: 'ลิงก์รีเซ็ตหมดอายุแล้ว กรุณาขอลิงก์ใหม่' },
+        { status: 400 }
+      );
+    }
+
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('user_id, email')
-      .eq('email', email.toLowerCase().trim())
+      .eq('user_id', resetRecord.user_id)
       .single();
 
     if (userError || !user) {
@@ -46,8 +82,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(newPassword, saltRounds);
+    const passwordHash = await hashPassword(newPassword);
 
     const { error: updateError } = await supabaseAdmin
       .from('users')
@@ -61,6 +96,12 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    // ทำเครื่องหมายว่า token ถูกใช้งานแล้ว
+    await supabaseAdmin
+      .from('password_resets')
+      .update({ used: true })
+      .eq('reset_id', resetRecord.reset_id);
 
     return NextResponse.json({
       success: true,

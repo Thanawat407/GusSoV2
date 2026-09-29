@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import emailjs from '@emailjs/nodejs';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,29 +41,65 @@ export async function POST(request: Request) {
     const resetToken = 'reset_' + Math.random().toString(36).substring(2, 15);
     const resetLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://gussov2.onrender.com'}/auth/update-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
-    try {
-      await emailjs.send(
-        'service_5t8qqtj',
-        'template_1ln8ve7',
-        {
-          to_email: email,
-          to_name: user.full_name || email,
-          reset_link: resetLink,
-          reset_token: resetToken,
-        },
-        {
-          publicKey: 'DSI4WZImOBIzggUBL',
-          privateKey: process.env.EMAILJS_PRIVATE_KEY || '',
-        }
+    // บันทึก reset token ลงฐานข้อมูล
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // หมดอายุใน 30 นาที
+    const { error: resetError } = await supabaseAdmin
+      .from('password_resets')
+      .insert({
+        user_id: user.user_id,
+        token: resetToken,
+        expires_at: expiresAt.toISOString(),
+        used: false,
+      });
+
+    if (resetError) {
+      console.error('Reset token save error:', resetError);
+      return NextResponse.json(
+        { error: 'ไม่สามารถสร้างลิงก์รีเซ็ตได้ กรุณาลองใหม่อีกครั้ง' },
+        { status: 500 }
       );
-    } catch (emailError) {
-      console.error('EmailJS error:', emailError);
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว',
-    });
+    // ส่งอีเมลผ่าน EmailJS HTTP API
+    try {
+      const emailjsResponse = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          service_id: 'service_5t8qqtj',
+          template_id: 'template_1ln8ve7',
+          user_id: 'DSI4WZImOBIzggUBL',
+          template_params: {
+            to_email: email,
+            to_name: user.full_name || email,
+            reset_link: resetLink,
+            reset_token: resetToken,
+          },
+        }),
+      });
+
+      if (!emailjsResponse.ok) {
+        const errorText = await emailjsResponse.text();
+        console.error('EmailJS API error:', errorText);
+        return NextResponse.json(
+          { error: 'ไม่สามารถส่งอีเมลได้ กรุณาลองใหม่ในภายหลัง' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว',
+      });
+    } catch (emailError) {
+      console.error('EmailJS error:', emailError);
+      return NextResponse.json(
+        { error: 'เกิดข้อผิดพลาดในการส่งอีเมล กรุณาลองใหม่ในภายหลัง' },
+        { status: 500 }
+      );
+    }
   } catch (error: any) {
     console.error('Forgot password error:', error);
     return NextResponse.json(

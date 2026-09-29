@@ -36,14 +36,21 @@ export function UpdatePasswordForm({
     }
 
     try {
-      // ดึง email จาก session หรือ query parameter
+      // ดึง email และ token จาก query parameter
       const urlParams = new URLSearchParams(window.location.search);
       const email = urlParams.get('email') || '';
+      const token = urlParams.get('token') || '';
+
+      if (!email || !token) {
+        setError('ลิงก์รีเซ็ตไม่ถูกต้องหรือหมดอายุแล้ว');
+        setIsLoading(false);
+        return;
+      }
 
       const response = await fetch('/api/update-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, newPassword: password }),
+        body: JSON.stringify({ email, token, newPassword: password }),
       });
 
       const data = await response.json();

@@ -2,12 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://yqgqbmcmklshurruikln.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'public-anon-key-placeholder';
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -19,16 +13,26 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     setMessage('');
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/update-password`,
-    });
+    try {
+      const response = await fetch('/api/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
 
-    if (error) {
-      setMessage('เกิดข้อผิดพลาด: ' + error.message);
-    } else {
-      setMessage('ส่งลิงก์ตั้งค่ารหัสผ่านใหม่ไปยังอีเมลของคุณเรียบร้อยแล้ว');
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || 'เกิดข้อผิดพลาด');
+        return;
+      }
+
+      setMessage(data.message || 'ส่งลิงก์ตั้งค่ารหัสผ่านใหม่ไปยังอีเมลของคุณเรียบร้อยแล้ว');
+    } catch (err: any) {
+      setMessage('เกิดข้อผิดพลาด: ' + (err.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
