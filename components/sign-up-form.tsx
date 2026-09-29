@@ -2,43 +2,50 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = 'https://yqgqbmcmklshurruikln.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3FibWNta2xzaHVycnVpa2xuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2NjI2MywiZXhwIjoyMTA2MTQyMjYzfQ.ZzisfPr_oUtRlaQvf2mdzDDw_6SG648udLznPrEVJYI';
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 export function SignUpForm() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
     try {
-      const { error } = await supabase.from('users').insert([{
-        email: email.trim(),
-        full_name: fullName.trim(),
-        role_id: 1,
-        password_hash: password
-      }]);
-
-      if (error) {
-        alert('สมัครสมาชิกไม่สำเร็จ: ' + error.message);
-      } else {
-        alert('สมัครสมาชิกสำเร็จ!');
-        localStorage.setItem('gusso_current_session', JSON.stringify({
+      const response = await fetch('/api/sign-up', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           email: email.trim(),
           full_name: fullName.trim(),
-          role_id: 1
-        }));
-        window.location.href = '/';
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'สมัครสมาชิกไม่สำเร็จ');
+        return;
       }
+
+      localStorage.setItem('gusso_current_session', JSON.stringify({
+        email: data.user.email,
+        full_name: data.user.full_name,
+        role_id: data.user.role_id,
+        user_id: data.user.user_id,
+      }));
+
+      alert('สมัครสมาชิกสำเร็จ! ยินดีต้อนรับสู่ GusSo');
+      window.location.href = '/';
     } catch (err: any) {
-      alert('เกิดข้อผิดพลาด: ' + (err.message || 'Unknown error'));
+      setError('เกิดข้อผิดพลาด: ' + (err.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -53,6 +60,12 @@ export function SignUpForm() {
         <h2 className="text-xl font-bold text-slate-800">สมัครสมาชิก GusSo</h2>
         <p className="text-xs text-slate-500">กรอกข้อมูลบัญชีของคุณเพื่อเข้าใช้งานระบบ</p>
       </div>
+
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-600 px-4 py-3 rounded-xl text-sm">
+          {error}
+        </div>
+      )}
 
       <form onSubmit={handleSignUp} className="space-y-4" autoComplete="off">
         <div>
@@ -88,9 +101,10 @@ export function SignUpForm() {
             value={password} 
             onChange={(e) => setPassword(e.target.value)} 
             required 
+            minLength={6}
             autoComplete="new-password"
             className="w-full px-3.5 py-2.5 border rounded-xl text-sm outline-none focus:border-sky-500 transition text-slate-800" 
-            placeholder="••••••••••••" 
+            placeholder="•••••••••••• (อย่างน้อย 6 ตัวอักษร)" 
           />
         </div>
 
@@ -99,7 +113,7 @@ export function SignUpForm() {
           disabled={loading}
           className="w-full py-3 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white font-bold rounded-xl text-sm shadow-md transition"
         >
-          {loading ? 'กำลังตรวจสอบ...' : 'ยืนยันการสมัครสมาชิก'}
+          {loading ? 'กำลังสมัครสมาชิก...' : 'ยืนยันการสมัครสมาชิก'}
         </button>
       </form>
 

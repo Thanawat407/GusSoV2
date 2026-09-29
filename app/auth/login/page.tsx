@@ -2,12 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function LoginPage() {
   const [isRegister, setIsRegister] = useState(false);
@@ -15,52 +10,61 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
-    if (isRegister) {
-      // สมัครสมาชิกใหม่ บันทึกลงตาราง users ใน Supabase
-      const { error } = await supabase
-        .from('users')
-        .insert([{ email, full_name: fullName, role_id: 1 }]);
+    try {
+      if (isRegister) {
+        const response = await fetch('/api/sign-up', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, full_name: fullName, password }),
+        });
 
-      if (error) {
-        console.error('Register error:', error);
-        alert('สมัครสมาชิกไม่สำเร็จ: ' + error.message);
-      } else {
-        alert('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
-        setIsRegister(false);
-      }
-    } else {
-      // เช็กว่าเป็นแอดมินบัญชีลับหลังบ้านหรือไม่
-      if (email.toLowerCase().trim() === 'admin@gusso.com' && password === 'admin123') {
-        let adminUser = { name: 'ผู้ดูแลระบบ', email: 'admin@gusso.com', role_id: 2 };
-        localStorage.setItem('gusso_current_session', JSON.stringify(adminUser));
-        alert('เข้าสู่ระบบผู้ดูแลระบบสำเร็จ!');
+        const data = await response.json();
+
+        if (!response.ok) {
+          setError(data.error || 'สมัครสมาชิกไม่สำเร็จ');
+          return;
+        }
+
+        localStorage.setItem('gusso_current_session', JSON.stringify({
+          email: data.user.email,
+          full_name: data.user.full_name,
+          role_id: data.user.role_id,
+          user_id: data.user.user_id,
+        }));
+
+        alert('สมัครสมาชิกสำเร็จ! ยินดีต้อนรับสู่ GusSo');
         router.push('/');
-        setLoading(false);
-        return;
-      }
-
-      // ถ้าไม่ใช่แอดมิน ให้ค้นหาจากตาราง users ใน Supabase ทั่วไป
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .single();
-
-      if (error || !data) {
-        alert('ไม่พบอีเมลนี้ในระบบฐานข้อมูล หรือรหัสผ่านไม่ถูกต้อง');
       } else {
-        localStorage.setItem('gusso_current_session', JSON.stringify(data));
-        alert(`เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับคุณ ${data.full_name || data.email}`);
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setError(data.error || 'เข้าสู่ระบบไม่สำเร็จ');
+          return;
+        }
+
+        localStorage.setItem('gusso_current_session', JSON.stringify(data.user));
+        alert(`เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับคุณ ${data.user.full_name || data.user.email}`);
         router.push('/');
       }
+    } catch (err: any) {
+      setError('เกิดข้อผิดพลาด: ' + (err.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -75,6 +79,12 @@ export default function LoginPage() {
           </h2>
           <p className="text-xs text-slate-500 mt-1">กรอกข้อมูลบัญชีของคุณเพื่อเข้าใช้งานระบบ</p>
         </div>
+
+        {error && (
+          <div className="bg-rose-50 border border-rose-200 text-rose-600 px-4 py-3 rounded-xl text-sm">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleAuth} className="space-y-4">
           {isRegister && (
@@ -115,9 +125,11 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className="flex justify-end mb-2">
-          <Link href="/auth/forgot-password" className="text-xs text-sky-600 hover:underline">ลืมรหัสผ่าน?</Link>
-          </div>
+          {!isRegister && (
+            <div className="flex justify-end mb-2">
+              <Link href="/auth/forgot-password" className="text-xs text-sky-600 hover:underline">ลืมรหัสผ่าน?</Link>
+            </div>
+          )}
 
           <button 
             type="submit" 
@@ -132,7 +144,7 @@ export default function LoginPage() {
           <Link href="/" className="text-slate-500 hover:underline">← กลับหน้าหลัก</Link>
           <button 
             type="button" 
-            onClick={() => setIsRegister(!isRegister)} 
+            onClick={() => { setIsRegister(!isRegister); setError(''); }} 
             className="text-sky-600 font-semibold hover:underline"
           >
             {isRegister ? 'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ' : 'ยังไม่มีบัญชี? สมัครสมาชิก'}
