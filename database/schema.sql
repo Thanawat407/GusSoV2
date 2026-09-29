@@ -1,6 +1,6 @@
 -- ============================================
--- GusSo Digital Bookstore - Database Schema
--- สำหรับ Supabase SQL Editor (Web)
+-- GusSo Digital Bookstore - Database Schema (v2)
+-- เพิ่มตาราง password_resets สำหรับระบบรีเซ็ตรหัสผ่าน
 -- ============================================
 
 -- ลบตารางเดิมทั้งหมดก่อน
@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS carts CASCADE;
 DROP TABLE IF EXISTS ebooks CASCADE;
 DROP TABLE IF EXISTS authors CASCADE;
 DROP TABLE IF EXISTS categories CASCADE;
+DROP TABLE IF EXISTS password_resets CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- สร้างตาราง users
@@ -27,6 +28,19 @@ CREATE TABLE users (
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- สร้างตาราง password_resets (สำหรับระบบรีเซ็ตรหัสผ่าน)
+CREATE TABLE password_resets (
+    reset_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    used BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token);
+CREATE INDEX IF NOT EXISTS idx_password_resets_user_id ON password_resets(user_id);
 
 -- สร้างตาราง categories
 CREATE TABLE categories (
@@ -113,6 +127,7 @@ CREATE TABLE download_links (
 
 -- เปิด RLS ทั้งหมด
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE password_resets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE authors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ebooks ENABLE ROW LEVEL SECURITY;
@@ -127,6 +142,12 @@ ALTER TABLE download_links ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "users_select" ON users FOR SELECT USING (true);
 CREATE POLICY "users_insert" ON users FOR INSERT WITH CHECK (true);
 CREATE POLICY "users_update" ON users FOR UPDATE USING (true);
+
+-- Policies สำหรับ password_resets
+CREATE POLICY "password_resets_select" ON password_resets FOR SELECT USING (true);
+CREATE POLICY "password_resets_insert" ON password_resets FOR INSERT WITH CHECK (true);
+CREATE POLICY "password_resets_update" ON password_resets FOR UPDATE USING (true);
+CREATE POLICY "password_resets_delete" ON password_resets FOR DELETE USING (true);
 
 -- Policies สำหรับ categories
 CREATE POLICY "categories_select" ON categories FOR SELECT USING (true);
