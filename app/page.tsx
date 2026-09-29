@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import emailjs from '@emailjs/browser';
 
 const supabaseUrl = 'https://yqgqbmcmklshurruikln.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3FibWNta2xzaHVycnVpa2xuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2NjI2MywiZXhwIjoyMTA2MTQyMjYzfQ.ZzisfPr_oUtRlaQvf2mdzDDw_6SG648udLznPrEVJYI';
+const supabaseKey = 'sb_publishable_tmmvIicxYSDbKjEAabdn8w_IkWl8siK';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function GusSoStorefront() {
@@ -22,7 +22,6 @@ export default function GusSoStorefront() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // ฟอร์มสำหรับเพิ่มหนังสือใหม่
   const [newTitle, setNewTitle] = useState('');
   const [newAuthor, setNewAuthor] = useState('');
   const [newPrice, setNewPrice] = useState('');
@@ -42,7 +41,6 @@ export default function GusSoStorefront() {
 
   async function fetchData() {
     setLoading(true);
-    // ดึงข้อมูล E-books
     const { data: booksData, error: booksError } = await supabase.from('ebooks').select('*');
     if (booksError) {
       console.error('Error fetching books:', booksError);
@@ -53,7 +51,6 @@ export default function GusSoStorefront() {
       setEbooks(uniqueBooks);
     }
 
-    // ดึงข้อมูล Users สำหรับแอดมิน
     const { data: userData, error: userError } = await supabase.from('users').select('*');
     if (!userError && userData) {
       setUsersList(userData);
@@ -103,7 +100,6 @@ export default function GusSoStorefront() {
   const total = subtotal - discount;
   const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // ฟังก์ชันสลับสถานะ ปิด/เปิด การขายหนังสือ (Admin)
   const toggleBookStatus = async (ebookId: number, currentStatus: string) => {
     const nextStatus = currentStatus === 'หมด' ? 'พร้อมขาย' : 'หมด';
     const { error } = await supabase
@@ -118,7 +114,6 @@ export default function GusSoStorefront() {
     }
   };
 
-  // ฟังก์ชันเพิ่มหนังสือใหม่ (Admin)
   const handleAddBook = async (e: React.FormEvent) => {
     e.preventDefault();
     const { error } = await supabase.from('ebooks').insert([{
@@ -170,7 +165,6 @@ export default function GusSoStorefront() {
         }
       }
 
-      // 1. บันทึกข้อมูลลงตาราง orders (หลัก)
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert([{ user_id: userId, total_amount: total, status: 'ยืนยันแล้ว' }])
@@ -187,7 +181,6 @@ export default function GusSoStorefront() {
       const orderId = orderData.order_id;
       const receiptNo = 'RCP-2026-' + String(orderId).padStart(4, '0');
 
-      // 2. บันทึกข้อมูลลงตาราง payments (แบบปลอดภัย ดัก Error แยกต่างหาก)
       try {
         await supabase
           .from('payments')
@@ -267,7 +260,6 @@ export default function GusSoStorefront() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans relative">
-      {/* Header */}
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-50">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
@@ -309,7 +301,6 @@ export default function GusSoStorefront() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-6xl mx-auto p-6 flex-1 w-full space-y-8">
         <div className="bg-gradient-to-r from-sky-500 to-sky-700 rounded-3xl p-8 text-white shadow-lg flex justify-between items-center">
           <div>
@@ -365,7 +356,6 @@ export default function GusSoStorefront() {
         </div>
       </main>
 
-      {/* Admin Management Modal */}
       {isAdminModalOpen && isAdmin && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
           <div className="bg-white w-full max-w-4xl h-[85vh] p-6 rounded-3xl shadow-2xl flex flex-col justify-between overflow-hidden">
@@ -378,7 +368,6 @@ export default function GusSoStorefront() {
                 <button onClick={() => setIsAdminModalOpen(false)} className="text-slate-400 font-bold text-lg">✕</button>
               </div>
 
-              {/* Tabs */}
               <div className="flex space-x-2 my-4 border-b pb-2">
                 <button 
                   onClick={() => setAdminTab('books')} 
@@ -400,7 +389,6 @@ export default function GusSoStorefront() {
                 </button>
               </div>
 
-              {/* Tab Content */}
               <div className="max-h-[50vh] overflow-y-auto pr-2">
                 {adminTab === 'books' && (
                   <div className="space-y-3">
@@ -479,7 +467,6 @@ export default function GusSoStorefront() {
         </div>
       )}
 
-      {/* Cart Drawer */}
       {isCartOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex justify-end">
           <div className="bg-white w-full max-w-md h-full p-6 shadow-2xl flex flex-col justify-between">
@@ -520,7 +507,6 @@ export default function GusSoStorefront() {
         </div>
       )}
 
-      {/* QR Code Payment Modal */}
       {isQRModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
           <div className="bg-white w-full max-w-md p-6 rounded-3xl shadow-2xl space-y-6 text-center">
