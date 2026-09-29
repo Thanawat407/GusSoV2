@@ -14,27 +14,17 @@ export function SignUpForm() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const generateUUID = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  };
-
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const newUserId = generateUUID();
-
-      // บันทึกข้อมูลลงตาราง users โดยใช้ user_pwd และ user_id แบบ uuid ให้ตรงกับตารางจริง
+      // บันทึกข้อมูลลงตาราง users ตามโครงสร้างใหม่ (ไม่ต้องส่ง user_id เพราะเป็น SERIAL, ใช้ password_hash)
       const { error } = await supabase.from('users').insert([{
-        user_id: newUserId,
         email: email.trim(),
         full_name: fullName.trim(),
         role_id: 1,
-        user_pwd: password
+        password_hash: password
       }]);
 
       if (error) {
@@ -42,7 +32,6 @@ export function SignUpForm() {
       } else {
         alert('สมัครสมาชิกสำเร็จ!');
         localStorage.setItem('gusso_current_session', JSON.stringify({
-          user_id: newUserId,
           email: email.trim(),
           full_name: fullName.trim(),
           role_id: 1
