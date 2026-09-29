@@ -9,6 +9,14 @@ export function SignUpForm() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // ฟังก์ชันช่วยสุ่มสร้าง UUID v4 ให้ตรงกับคอลัมน์ user_id ในฐานข้อมูล
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -17,7 +25,9 @@ export function SignUpForm() {
       const supabaseUrl = 'https://yqgqbmcmklshurruikln.supabase.co';
       const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3FibWNta2xzaHVycnVpa2xuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2NjI2MywiZXhwIjoyMTA2MTQyMjYzfQ.ZzisfPr_oUtRlaQvf2mdzDDw_6SG648udLznPrEVJYI';
 
-      // ใช้ Fetch API ตรงไปที่ REST endpoint ของ Supabase เพื่อเลี่ยงปัญหาไคลเอนต์พัง
+      const newUserId = generateUUID();
+
+      // ส่งข้อมูลพร้อม user_id แบบ UUID ไปบันทึกในตาราง users
       const response = await fetch(`${supabaseUrl}/rest/v1/users`, {
         method: 'POST',
         headers: {
@@ -27,6 +37,7 @@ export function SignUpForm() {
           'Prefer': 'return=representation'
         },
         body: JSON.stringify({
+          user_id: newUserId,
           email: email.trim(),
           full_name: fullName.trim(),
           role_id: 1,
@@ -41,6 +52,7 @@ export function SignUpForm() {
 
       alert('สมัครสมาชิกสำเร็จ!');
       localStorage.setItem('gusso_current_session', JSON.stringify({
+        user_id: newUserId,
         email: email.trim(),
         full_name: fullName.trim(),
         role_id: 1
