@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 
 export const dynamic = 'force-dynamic';
 
