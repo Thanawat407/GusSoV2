@@ -28,6 +28,7 @@ export function SignUpForm() {
     try {
       const newUserId = generateUUID();
 
+      // บันทึกข้อมูลลงตาราง users โดยใช้ user_pwd และ user_id แบบ uuid ให้ตรงกับตารางจริง
       const { error } = await supabase.from('users').insert([{
         user_id: newUserId,
         email: email.trim(),
@@ -106,7 +107,10 @@ export function SignUpForm() {
         </div>
 
         <button 
-          >
+          type="submit" 
+          disabled={loading}
+          className="w-full py-3 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white font-bold rounded-xl text-sm shadow-md transition"
+        >
           {loading ? 'กำลังตรวจสอบ...' : 'ยืนยันการสมัครสมาชิก'}
         </button>
       </form>
