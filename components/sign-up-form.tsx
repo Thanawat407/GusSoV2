@@ -19,10 +19,12 @@ export function SignUpForm() {
     setLoading(true);
 
     try {
+      // บันทึกข้อมูลลงตาราง users พร้อมฟิลด์ user_pwd ให้ตรงกับฐานข้อมูล Supabase
       const { error } = await supabase.from('users').insert([{
         email: email.trim(),
         full_name: fullName.trim(),
-        role_id: 1
+        role_id: 1,
+        user_pwd: password
       }]);
 
       if (error) {
