@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import emailjs from '@emailjs/browser';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function GusSoStorefront() {
@@ -41,22 +41,26 @@ export default function GusSoStorefront() {
 
   async function fetchData() {
     setLoading(true);
-    const { data: booksData, error: booksError } = await supabase.from('ebooks').select('*');
-    if (booksError) {
-      console.error('Error fetching books:', booksError);
-    } else {
-      const uniqueBooks = Array.from(
-        new Map((booksData || []).map(book => [book.title, book])).values()
-      );
-      setEbooks(uniqueBooks);
-    }
+    try {
+      const { data: booksData, error: booksError } = await supabase.from('ebooks').select('*');
+      if (booksError) {
+        console.error('Error fetching books:', booksError);
+      } else {
+        const uniqueBooks = Array.from(
+          new Map((booksData || []).map(book => [book.title, book])).values()
+        );
+        setEbooks(uniqueBooks);
+      }
 
-    const { data: userData, error: userError } = await supabase.from('users').select('*');
-    if (!userError && userData) {
-      setUsersList(userData);
+      const { data: userData, error: userError } = await supabase.from('users').select('*');
+      if (!userError && userData) {
+        setUsersList(userData);
+      }
+    } catch (error) {
+      console.error('Fetch data error:', error);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   const handleLogout = () => {
