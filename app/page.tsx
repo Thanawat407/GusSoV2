@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import emailjs from '@emailjs/browser';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://yqgbqmcmklshurruikln.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3FibWNta2xzaHVycnVpa2xuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDU2NjI2MywiZXhwIjoyMTA2MTQyMjYzfQ.ZzisfPr_oUtRlaQvf2mdzDDw_6SG648udLznPrEVJYI';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function GusSoStorefront() {
@@ -42,19 +42,16 @@ export default function GusSoStorefront() {
   async function fetchData() {
     setLoading(true);
     try {
-      const { data: booksData, error: booksError } = await supabase.from('ebooks').select('*');
-      if (booksError) {
-        console.error('Error fetching books:', booksError);
-      } else {
+      const response = await fetch('/api/ebooks');
+      const result = await response.json();
+
+      if (response.ok && result.data) {
         const uniqueBooks = Array.from(
-          new Map((booksData || []).map(book => [book.title, book])).values()
+          new Map(result.data.map((book: any) => [book.title, book])).values()
         );
         setEbooks(uniqueBooks);
-      }
-
-      const { data: userData, error: userError } = await supabase.from('users').select('*');
-      if (!userError && userData) {
-        setUsersList(userData);
+      } else {
+        console.error('Error fetching books:', result.error || 'Unknown error');
       }
     } catch (error) {
       console.error('Fetch data error:', error);
